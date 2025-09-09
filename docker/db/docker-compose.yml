@@ -1,0 +1,33 @@
+services:
+  mdi-db:
+    image: ghcr.io/stain/jena-fuseki:latest
+    container_name: "mdi-db"
+    environment:
+      ADMIN_PASSWORD: "${DB_ADMIN_PASSWORD}"
+      TDB: 2
+      FUSEKI_DATASET_1: "${DB_NAME}"
+      JAVA_TOOL_OPTIONS: >-
+        -XX:InitialRAMPercentage=25
+        -XX:MaxRAMPercentage=80
+        -XX:+ExitOnOutOfMemoryError
+        -XX:+UseG1GC
+        -XX:MaxMetaspaceSize=128m
+        -XX:MaxDirectMemorySize=64m
+    command: ["/jena-fuseki/fuseki-server", "--jetty=/etc/jetty/jetty.xml"]
+    volumes:
+      - ./docker/db/jetty.xml:/etc/jetty/jetty.xml:ro
+      - vol-mdi-db:/fuseki
+    restart: unless-stopped
+    networks:
+      - net-mdi
+    ports:
+      - "127.0.0.1:${DB_PORT}:3030"
+    mem_limit: 1536m
+    mem_reservation: 1200m
+
+networks:
+  net-mdi:
+    external: true
+
+volumes:
+  vol-mdi-db:

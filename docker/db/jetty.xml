@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN"
+  "https://www.eclipse.org/jetty/configure_11_0.dtd">
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+  <!-- HttpConfiguration -->
+  <New id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
+    <Set name="sendServerVersion">false</Set>
+    <Set name="sendDateHeader">false</Set>
+    <Set name="requestHeaderSize">16384</Set>
+    <Set name="responseHeaderSize">16384</Set>
+    <Set name="outputBufferSize">32768</Set>
+  </New>
+
+  <!-- HTTP/1.1 ConnectionFactory -->
+  <New id="httpCF" class="org.eclipse.jetty.server.HttpConnectionFactory">
+    <Arg><Ref refid="httpConfig"/></Arg>
+  </New>
+
+  <!-- Custom connector on 3030 -->
+  <New id="httpConnector" class="org.eclipse.jetty.server.ServerConnector">
+    <Arg><Ref refid="Server"/></Arg>
+    <Arg>
+      <Array type="org.eclipse.jetty.server.ConnectionFactory">
+        <Item><Ref refid="httpCF"/></Item>
+      </Array>
+    </Arg>
+    <Set name="port">3030</Set>
+    <Set name="acceptQueueSize">512</Set>
+    <Set name="idleTimeout">30000</Set>
+    <Set name="reuseAddress">true</Set>
+  </New>
+
+  <!-- Replace any existing connectors with the custom one -->
+  <Set name="connectors">
+    <Array type="org.eclipse.jetty.server.Connector">
+      <Item><Ref refid="httpConnector"/></Item>
+    </Array>
+  </Set>
+</Configure>

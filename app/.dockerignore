@@ -1,0 +1,35 @@
+# Maven build output
+target/
+*/target/
+**/target/
+
+# IDE metadata
+*.iml
+.idea/
+.vscode/
+.classpath
+.project
+.settings/
+
+# OS / misc
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Logs
+*.log
+
+# Temporary / build cache
+*.swp
+*.swo
+*.bak
+*.tmp
+
+# Docker-specific
+Dockerfile
+docker-compose*.yml
+.dockerignore

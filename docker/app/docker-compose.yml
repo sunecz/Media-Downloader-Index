@@ -1,0 +1,32 @@
+services:
+  mdi-app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: "mdi-app"
+    environment:
+      APP_DB_URI: ${APP_DB_URI}
+      APP_STORAGE_DIR: ${APP_STORAGE_DIR}
+      APP_PROXY_CZ: ${APP_PROXY_CZ}
+      APP_PROXY_SK: ${APP_PROXY_SK}
+      JAVA_TOOL_OPTIONS: >-
+        -XX:InitialRAMPercentage=25
+        -XX:MaxRAMPercentage=60
+        -XX:+ExitOnOutOfMemoryError
+        -XX:+UseG1GC
+        -XX:MaxMetaspaceSize=192m
+        -XX:MaxDirectMemorySize=128m
+    volumes:
+      - vol-mdi-storage:/storage
+    restart: unless-stopped
+    networks:
+      - net-mdi
+    mem_limit: 768m
+    mem_reservation: 600m
+
+networks:
+  net-mdi:
+    external: true
+
+volumes:
+  vol-mdi-storage:

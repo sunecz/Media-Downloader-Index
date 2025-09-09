@@ -1,0 +1,86 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+		                     https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	
+	<parent>
+		<groupId>sune.app.mediadown</groupId>
+		<artifactId>index</artifactId>
+		<version>0</version>
+		<relativePath>../</relativePath>
+	</parent>
+	
+	<groupId>sune.app.mediadown.index</groupId>
+	<artifactId>plugin</artifactId>
+	<name>Media Downloader Index Plugins</name>
+	<packaging>pom</packaging>
+	
+	<modules>
+		<module>iprima</module>
+	</modules>
+	
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>sune.app.mediadown.index</groupId>
+				<artifactId>core</artifactId>
+				<version>0.0.1</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+	
+	<profiles>
+		<profile>
+			<id>copy-plugin-jars</id>
+			<activation>
+				<file>
+					<exists>${basedir}/src/main</exists>
+				</file>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-deploy-plugin</artifactId>
+						<version>3.1.2</version>
+						<configuration>
+							<skip>true</skip>
+						</configuration>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-install-plugin</artifactId>
+						<version>3.1.2</version>
+						<configuration>
+							<skip>true</skip>
+						</configuration>
+					</plugin>
+					<plugin>
+						<groupId>com.coderplus.maven.plugins</groupId>
+						<artifactId>copy-rename-maven-plugin</artifactId>
+						<version>1.0.1</version>
+						<inherited>true</inherited>
+						<executions>
+							<execution>
+								<id>copy-jar-to-dist</id>
+								<phase>package</phase>
+								<goals>
+									<goal>copy</goal>
+								</goals>
+								<configuration>
+									<sourceFile>
+										${project.build.directory}/${project.build.finalName}.jar
+									</sourceFile>
+									<destinationFile>
+										${project.parent.parent.basedir}/dist/plugins/${project.artifactId}.jar
+									</destinationFile>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+</project>

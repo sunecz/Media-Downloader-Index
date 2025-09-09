@@ -1,0 +1,112 @@
+package sune.app.mediadown.index.media;
+
+import java.net.URI;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import sune.app.mediadown.index.util.Opt;
+import sune.app.mediadown.index.util.Opt.OptMapper;
+
+public interface Media {
+	
+	MediaSource source();
+	URI uri();
+	MediaType type();
+	MediaFormat format();
+	MediaQuality quality();
+	long size();
+	MediaMetadata metadata();
+	Media parent();
+	boolean isContainer();
+	default boolean isSingle() {
+		return !isContainer();
+	}
+	boolean isSegmented();
+	default boolean isSolid() {
+		return !isSegmented();
+	}
+	boolean isVirtual();
+	default boolean isPhysical() {
+		return !isVirtual();
+	}
+	
+	static MediaContainer asContainer(Media media) {
+		return media.isContainer() || media instanceof MediaContainer ? (MediaContainer) media : null;
+	}
+	
+	static Media root(Media media) {
+		if(media == null) {
+			return null;
+		}
+		
+		Media root = media;
+		for(Media parent; (parent = root.parent()) != null && parent != media; root = parent);
+		
+		return root;
+	}
+	
+	static <T extends Media> List<T> findAllOfType(Media media, MediaType mediaType) {
+		return Opt.of(media)
+				  .ifTrue((v) -> v.isSingle() && v.type().is(mediaType)).map(List::of)
+				  .<Media>or((opt) -> opt.ifTrue(Media::isContainer)
+				                         .map(OptMapper.of(Media::asContainer)
+				                                       .then((v) -> v.allOfType(mediaType))
+				                         ))
+				  .<List<T>>castAny().orElseGet(List::of);
+	}
+	
+	static <T extends Media> List<T> findAllContainersOfType(Media media, MediaType mediaType) {
+		return Opt.of(media)
+				  .ifTrue((v) -> v.isContainer() && v.type().is(mediaType)).map(List::of)
+				  .<Media>or((opt) -> opt.ifTrue(Media::isContainer)
+				                         .map(OptMapper.of(Media::asContainer)
+				                                       .then((v) -> v.allContainersOfType(mediaType).stream()
+				                                                     .map((m) -> (Media) m)
+				                                                     .collect(Collectors.toList()))
+				                         ))
+				  .<List<T>>castAny().orElseGet(List::of);
+	}
+	
+	static <T extends Media> T findOfType(Media media, MediaType mediaType) {
+		return Opt.of(media)
+				  .ifTrue((v) -> v.isSingle() && v.type().is(mediaType))
+				  .<Media>or((opt) -> opt.ifTrue(Media::isContainer)
+				                         .map(OptMapper.of(Media::asContainer)
+				                                       .then((v) -> v.ofType(mediaType))
+				                         ))
+				  .<T>cast().get();
+	}
+	
+	static <T extends Media> T findContainerOfType(Media media, MediaType mediaType) {
+		return Opt.of(media)
+				  .ifTrue((v) -> v.isContainer() && v.type().is(mediaType))
+				  .<Media>or((opt) -> opt.ifTrue(Media::isContainer)
+				                         .map(OptMapper.of(Media::asContainer)
+				                                       .then((v) -> v.containerOfType(mediaType))
+				                         ))
+				  .<T>cast().get();
+	}
+	
+	interface Builder<T extends Media, B extends Builder<T, B>> {
+		
+		T build();
+		
+		B source(MediaSource source);
+		B uri(URI uri);
+		B type(MediaType type);
+		B format(MediaFormat format);
+		B quality(MediaQuality quality);
+		B size(long size);
+		B metadata(MediaMetadata metadata);
+		B parent(Media parent);
+		
+		MediaSource source();
+		URI uri();
+		MediaType type();
+		MediaFormat format();
+		MediaQuality quality();
+		long size();
+		MediaMetadata metadata();
+		Media parent();
+	}
+}

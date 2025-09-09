@@ -1,0 +1,188 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+		                     https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>sune.app.mediadown</groupId>
+		<artifactId>index</artifactId>
+		<version>0</version>
+		<relativePath>../</relativePath>
+	</parent>
+	
+	<groupId>sune.app.mediadown.index</groupId>
+	<artifactId>core</artifactId>
+	<version>0.0.1</version>
+	<name>Media Downloader Index Core</name>
+	<packaging>jar</packaging>
+	
+	<properties>
+		<core.main-class>sune.app.mediadown.index.Application</core.main-class>
+		<spring-boot.version>3.5.5</spring-boot.version>
+		<jena.version>5.5.0</jena.version>
+		<jopa.version>2.5.1</jopa.version>
+		<jopa-transaction.version>0.4.1</jopa-transaction.version>
+	</properties>
+	
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-dependencies</artifactId>
+				<version>${spring-boot.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			
+			<!-- Use the same version for all of Jena dependencies -->
+			<dependency>
+				<groupId>org.apache.jena</groupId>
+				<artifactId>jena-bom</artifactId>
+				<version>${jena.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+	
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.jena</groupId>
+			<artifactId>jena-tdb2</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.jena</groupId>
+			<artifactId>jena-fuseki-main</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>cz.cvut.kbss.jopa</groupId>
+			<artifactId>jopa-api</artifactId>
+			<version>${jopa.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>cz.cvut.kbss.jopa</groupId>
+			<artifactId>jopa-impl</artifactId>
+			<version>${jopa.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>cz.cvut.kbss.jopa</groupId>
+			<artifactId>ontodriver-jena</artifactId>
+			<version>${jopa.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>xml-apis</groupId>
+					<artifactId>xml-apis</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+            <groupId>com.github.ledsoft</groupId>
+            <artifactId>jopa-spring-transaction</artifactId>
+            <version>${jopa-transaction.version}</version>
+        </dependency>
+
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-simple</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+		
+		<!-- Media Downloader dependencies -->
+		<dependency>
+			<groupId>org.jsoup</groupId>
+			<artifactId>jsoup</artifactId>
+			<version>1.17.2</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.infomas</groupId>
+			<artifactId>annotation-detector</artifactId>
+			<version>3.0.5</version>
+		</dependency>
+	</dependencies>
+	
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>3.3.0</version>
+				<configuration>
+					<archive>
+						<manifest>
+							<mainClass>${core.main-class}</mainClass>
+						</manifest>
+					</archive>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>3.5.3</version>
+				<executions>
+					<execution>
+						<id>shade-dist</id>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+						<configuration>
+							<!-- Keep thin jar as the main artifact -->
+							<shadedArtifactAttached>true</shadedArtifactAttached>
+							<shadedClassifierName>all</shadedClassifierName>
+							
+							<!-- Don’t rewrite the module’s POM -->
+							<createDependencyReducedPom>false</createDependencyReducedPom>
+							
+							<!-- Remove duplicate Signatures -->
+							<filters>
+								<filter>
+									<artifact>*:*</artifact>
+									<excludes>
+										<exclude>META-INF/*.SF</exclude>
+										<exclude>META-INF/*.DSA</exclude>
+										<exclude>META-INF/*.RSA</exclude>
+									</excludes>
+								</filter>
+							</filters>
+							
+							<transformers>
+								<!-- Merge ServiceLoader files -->
+								<transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+							</transformers>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>com.coderplus.maven.plugins</groupId>
+				<artifactId>copy-rename-maven-plugin</artifactId>
+				<version>1.0.1</version>
+				<inherited>true</inherited>
+				<executions>
+					<execution>
+						<id>copy-jar-to-dist</id>
+						<phase>package</phase>
+						<goals>
+							<goal>copy</goal>
+						</goals>
+						<configuration>
+							<sourceFile>
+								${project.build.directory}/${project.build.finalName}-all.jar
+							</sourceFile>
+							<destinationFile>
+								${project.parent.basedir}/dist/${project.artifactId}.jar
+							</destinationFile>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+</project>
