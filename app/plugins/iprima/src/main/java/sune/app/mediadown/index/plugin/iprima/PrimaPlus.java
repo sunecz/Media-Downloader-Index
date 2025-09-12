@@ -1,6 +1,7 @@
 package sune.app.mediadown.index.plugin.iprima;
 
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.function.BiFunction;
 
 import sune.app.mediadown.index.entity.Movie;
@@ -34,7 +35,9 @@ final class PrimaPlus implements IPrima {
 		BiFunction<Sitemap, Sitemap, SitemapProcessor<T>> ctor,
 		ListTask<? super T> task
 	) throws Exception {
-		try(SitemapFileRotator rotator = new SitemapFileRotator(Storage.directory(), name)) {
+		Path storageDir = Storage.directory().resolve("plugin/iprima/primaplus");
+		
+		try(SitemapFileRotator rotator = new SitemapFileRotator(storageDir, name)) {
 			Sitemap oldSitemap = Sitemap.of(rotator.previousFile());
 			Sitemap newSitemap;
 			
