@@ -1,14 +1,17 @@
 package sune.app.mediadown.index.plugin.iprima;
 
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.function.BiFunction;
+import java.util.zip.GZIPInputStream;
 
 import sune.app.mediadown.index.entity.Movie;
 import sune.app.mediadown.index.entity.Program;
 import sune.app.mediadown.index.entity.TVSeries;
 import sune.app.mediadown.index.net.Net;
 import sune.app.mediadown.index.net.Web;
+import sune.app.mediadown.index.net.Web.Request;
 import sune.app.mediadown.index.net.Web.Response;
 import sune.app.mediadown.index.plugin.iprima.IPrimaWebsite.IPrima;
 import sune.app.mediadown.index.sitemap.Sitemap;
@@ -41,8 +44,23 @@ final class PrimaPlus implements IPrima {
 			Sitemap oldSitemap = Sitemap.of(rotator.previousFile());
 			Sitemap newSitemap;
 			
-			try(Response.OfStream response = Web.requestStream(Requests.of(sitemapUri).GET())) {
-				newSitemap = Sitemap.of(response.stream(), rotator.currentFile());
+			Request request = Requests.of(sitemapUri)
+				.header("Accept-Encoding", "gzip")
+				.GET();
+			
+			try(Response.OfStream response = Web.requestStream(request)) {
+				InputStream stream = response.stream();
+				
+				String encoding = response.headers()
+					.firstValue("Content-Encoding")
+					.map(String::toLowerCase)
+					.orElse(null);
+				
+				if("gzip".equals(encoding)) {
+					stream = new GZIPInputStream(stream);
+				}
+				
+				newSitemap = Sitemap.of(stream, rotator.currentFile());
 			}
 			
 			SitemapProcessor<T> processor = ctor.apply(oldSitemap, newSitemap);
