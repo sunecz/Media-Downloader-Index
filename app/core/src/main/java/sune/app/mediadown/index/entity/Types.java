@@ -7,8 +7,10 @@ import sune.app.mediadown.index.net.Net;
 public final class Types {
 
 	public static final String PREFIX_MDI = "https://schema.mdi.sune.app/";
+	public static final String PREFIX_MDI_GRAPH = PREFIX_MDI + "graph#";
 	public static final String PREFIX_SCHEMA = "https://schema.org/";
 
+	public static final String URI_DEFAULT_GRAPH = "urn:x-arq:DefaultGraph";
 	public static final String URI_MDI = "https://data.mdi.sune.app/";
 	public static final String URI_SCHEMA = "https://schema.org/";
 	

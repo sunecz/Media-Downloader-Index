@@ -2,6 +2,7 @@ package sune.app.mediadown.index;
 
 import java.util.Map;
 
+import org.apache.jena.http.auth.AuthEnv;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -38,6 +39,18 @@ public class ApplicationConfiguration {
 				"cz.cvut.jopa.ontology.physicalURI", environment.getProperty("APP_DB_URI"),
 				"cz.cvut.kbss.ontodriver.jena.storage", "fuseki"
 			)
+		);
+		
+		// Configure HTTP Authorization for update operations in Fuseki. This is for Jena directly,
+		// and should not affect JOPA itself, even if JOPA uses Jena underneath.
+		// This is required for using direct Jena update request due to JOPA not being able to run
+		// the update query correctly. It does not even throw any error, it just fails silently.
+		// This is probably an Authorization issue, but configuring JOPA dataSource username
+		// and password does not work at all.
+		AuthEnv.get().registerUsernamePassword(
+			environment.getProperty("APP_DB_URI"),
+			environment.getProperty("APP_DB_USER"),
+			environment.getProperty("APP_DB_PASS")
 		);
 	}
 	

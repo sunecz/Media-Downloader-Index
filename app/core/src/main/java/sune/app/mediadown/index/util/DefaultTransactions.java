@@ -3,7 +3,10 @@ package sune.app.mediadown.index.util;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.TransactionSystemException;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
+
+import cz.cvut.kbss.jopa.exceptions.RollbackException;
 
 @Component("transactions")
 public class DefaultTransactions implements Transactions {
@@ -27,7 +30,23 @@ public class DefaultTransactions implements Transactions {
 			throw ex;
 		}
 		
-		transactionManager.commit(status);
+		if(!status.isRollbackOnly()) {
+			try {
+				transactionManager.commit(status);
+				return result;
+			} catch(RollbackException ex) {
+				// Ignore
+			} catch(TransactionSystemException ex) {
+				if(!(ex.getCause() instanceof RollbackException)) {
+					throw ex;
+				}
+			}
+		}
+		
+		if(!status.isCompleted()) {
+			transactionManager.rollback(status);
+		}
+		
 		return result;
 	}
 	

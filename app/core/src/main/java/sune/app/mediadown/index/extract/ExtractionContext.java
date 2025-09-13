@@ -3,8 +3,13 @@ package sune.app.mediadown.index.extract;
 import java.net.URI;
 import java.time.OffsetDateTime;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
+import org.apache.jena.update.UpdateExecution;
+import org.apache.jena.update.UpdateExecutionFactory;
+import org.apache.jena.update.UpdateFactory;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 import com.github.ledsoft.jopa.spring.transaction.DelegatingEntityManager;
@@ -26,10 +31,16 @@ import sune.app.mediadown.index.util.Transactions;
 @Component
 public class ExtractionContext {
 
+	private final Environment environment;
 	private final EntityManager entityManager;
 	private final Transactions transactions;
 
-	public ExtractionContext(EntityManager entityManager, Transactions transactions) {
+	public ExtractionContext(
+		Environment environment,
+		EntityManager entityManager,
+		Transactions transactions
+	) {
+		this.environment = environment;
 		this.entityManager = entityManager;
 		this.transactions = transactions;
 	}
@@ -38,14 +49,10 @@ public class ExtractionContext {
 		return entity.isActive();
 	}
 
-	public boolean isChanged(Entity entity, Entity existing) {
-		return !entity.equals(existing);
+	public boolean isChanged(Object entity, Object existing) {
+		return !Objects.equals(entity, existing);
 	}
-	
-	public boolean isChanged(Identifiable entity, Identifiable existing) {
-		return !entity.equals(existing);
-	}
-	
+
 	private <T extends Identifiable> void load(
 		EntityManager em,
 		AbstractUnitOfWork uow,
@@ -65,16 +72,16 @@ public class ExtractionContext {
 		}
 	}
 	
-	private EntityManagerImpl entityManager() {
+	private EntityManagerImpl entityManagerImpl() {
 		return (EntityManagerImpl) ((DelegatingEntityManager) entityManager).getDelegate();
 	}
 	
 	private AbstractUnitOfWork unitOfWork() {
-		return (AbstractUnitOfWork) entityManager().getCurrentPersistenceContext();
+		return (AbstractUnitOfWork) entityManagerImpl().getCurrentPersistenceContext();
 	}
 	
 	private void load(Identifiable identifiable) {
-		EntityManagerImpl em = entityManager();
+		EntityManagerImpl em = entityManagerImpl();
 		AbstractUnitOfWork uow = unitOfWork();
 		
 		if(!uow.isObjectManaged(identifiable) && uow.isLoaded(identifiable) != LoadState.LOADED) {
@@ -104,6 +111,29 @@ public class ExtractionContext {
 		entityManager.detach(entity);
 	}
 
+	public Identifiable update(Identifiable object) {
+		Identifiable existing;
+		if((existing = find(object.getClass(), object.getIdentifier())) != null) {
+			// Load the object fields so that all are actually set when calculating changes
+			load(object);
+			
+			if(object == existing || isChanged(object, existing)) {
+				// Update the object and detach the old one
+				object = mergeAndDetach(object);
+			} else {
+				// Clean up since nothing is changed
+				detach(existing);
+			}
+		} else {
+			entityManager.persist(object);
+			
+			// Load the object fields so that all are actually set when calculating changes
+			load(object);
+		}
+		
+		return object;
+	}
+
 	public Entity update(Entity entity) {
 		Entity existing;
 		if((existing = find(entity.getClass(), entity.getIdentifier())) != null) {
@@ -128,7 +158,11 @@ public class ExtractionContext {
 		
 		return entity;
 	}
-	
+
+	public Identifiable doUpdate(Identifiable entity) throws Exception {
+		return doTransaction(() -> update(entity));
+	}
+
 	public Entity doUpdate(Entity entity) throws Exception {
 		return doTransaction(() -> update(entity));
 	}
@@ -139,5 +173,18 @@ public class ExtractionContext {
 
 	public void doTransaction(CheckedRunnable action) throws Exception {
 		transactions.doTransaction(action);
+	}
+
+	public void runUpdateQuery(String query) {
+		UpdateExecution execution = UpdateExecutionFactory.createRemote(
+			UpdateFactory.create(query),
+			String.format("%s/update", environment.getProperty("APP_DB_URI"))
+		);
+		
+		execution.execute();
+	}
+
+	public EntityManager entityManager() {
+		return entityManager;
 	}
 }
