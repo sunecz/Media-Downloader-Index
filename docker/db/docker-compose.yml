@@ -1,6 +1,7 @@
 services:
   mdi-db:
-    image: ghcr.io/stain/jena-fuseki:latest
+    build:
+      context: docker/db/jena-fuseki
     container_name: "mdi-db"
     environment:
       ADMIN_PASSWORD: "${DB_ADMIN_PASSWORD}"
