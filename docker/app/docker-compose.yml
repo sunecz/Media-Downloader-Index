@@ -6,6 +6,8 @@ services:
     container_name: "mdi-app"
     environment:
       APP_DB_URI: ${APP_DB_URI}
+      APP_DB_USER: ${APP_DB_USER}
+      APP_DB_PASS: ${APP_DB_PASS}
       APP_STORAGE_DIR: ${APP_STORAGE_DIR}
       APP_SCHEDULER_CRON: ${APP_SCHEDULER_CRON}
       APP_SCHEDULER_ZONE: ${APP_SCHEDULER_ZONE}
